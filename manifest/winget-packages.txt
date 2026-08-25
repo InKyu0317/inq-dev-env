@@ -3,6 +3,7 @@ Git.Git
 
 # Python
 Python.Python.3.11
+astral-sh.uv
 
 # C# / .NET
 Microsoft.DotNet.SDK.6
@@ -18,8 +19,8 @@ Rustlang.Rustup
 # Containers / local infrastructure
 Docker.DockerDesktop
 
-# Lite XL
-LiteXLTeam.LiteXL
+# Editor
+Microsoft.VisualStudioCode
 
 # Native C/C++ build toolchain
 Microsoft.VisualStudio.2022.BuildTools

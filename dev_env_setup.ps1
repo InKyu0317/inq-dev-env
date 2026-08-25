@@ -91,7 +91,7 @@ function Step-Check {
     Write-Section "1. 환경 점검"
     Write-Host "PowerShell: $($PSVersionTable.PSVersion)"
     Write-Host "관리자 권한: $(Test-Administrator)"
-    foreach ($name in @("winget", "git", "python", "py", "uv", "node", "npm", "corepack", "pnpm", "dotnet", "rustup", "rustc", "cargo", "docker", "lpm")) {
+    foreach ($name in @("winget", "git", "python", "py", "uv", "node", "npm", "corepack", "pnpm", "dotnet", "rustup", "rustc", "cargo", "docker", "code")) {
         $version = Get-VersionLine $name
         $color = if ($version -eq "NOT FOUND" -or $version -eq "FAILED TO RUN") { "DarkYellow" } else { "Green" }
         Write-Host ("{0,-12} {1}" -f $name, $version) -ForegroundColor $color
@@ -104,41 +104,41 @@ function Step-Winget {
     if (-not (Test-CommandExists "winget")) { throw "winget이 없습니다. Microsoft App Installer를 먼저 설치하세요." }
     foreach ($id in (Read-Manifest (Join-Path $ManifestDir "winget-packages.txt"))) { Install-WingetPackage $id }
     Refresh-Path
-    Add-ExistingUserPath (Join-Path $env:LOCALAPPDATA "Programs\Lite XL")
+    Add-ExistingUserPath (Join-Path $env:LOCALAPPDATA "Programs\Microsoft VS Code\bin")
+    Add-ExistingUserPath (Join-Path $env:ProgramFiles "Microsoft VS Code\bin")
 }
 function Step-Uv {
-    Write-Section "3. uv 설치 및 확인"
+    Write-Section "4. uv 설치 및 확인"
     if (Test-CommandExists "uv") { Write-Host ("uv: {0}" -f (Get-VersionLine "uv")) -ForegroundColor Green; return }
-    $installer = Join-Path $env:TEMP "install-uv.ps1"
-    Invoke-WebRequest -Uri "https://astral.sh/uv/install.ps1" -OutFile $installer
-    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File $installer
-    if ($LASTEXITCODE -ne 0) { throw "uv 설치에 실패했습니다." }
+    if (-not (Test-CommandExists "winget")) { throw "uv 설치에 필요한 winget을 찾을 수 없습니다. 먼저 2번을 실행하세요." }
+    Install-WingetPackage "astral-sh.uv"
     Refresh-Path
-    foreach ($dir in @((Join-Path $env:USERPROFILE ".local\bin"), (Join-Path $env:USERPROFILE ".cargo\bin"))) {
-        if (Test-Path -LiteralPath (Join-Path $dir "uv.exe")) {
-            $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-            if (($userPath -split ";") -notcontains $dir) { [Environment]::SetEnvironmentVariable("Path", "$userPath;$dir", "User") }
-            $env:Path = "$dir;$env:Path"
-            break
-        }
-    }
+    Add-ExistingUserPath (Join-Path $env:LOCALAPPDATA "Microsoft\WinGet\Links")
     if (-not (Test-CommandExists "uv")) { throw "uv가 설치되었지만 현재 터미널에서 찾을 수 없습니다. 새 터미널을 열어주세요." }
     Write-Host ("uv: {0}" -f (Get-VersionLine "uv")) -ForegroundColor Green
 }
+function Step-VSCodeExtensions {
+    Write-Section "3. VS Code 확장 설치"
+    if (-not (Test-CommandExists "code")) { throw "code 명령을 찾을 수 없습니다. 먼저 2번을 실행하세요." }
+    foreach ($extension in (Read-Manifest (Join-Path $ManifestDir "vscode-extensions.txt"))) {
+        Write-Host "Installing VS Code extension: $extension" -ForegroundColor Gray
+        Invoke-Native "code" @("--install-extension", $extension, "--force")
+    }
+}
 function Step-PythonTools {
-    Write-Section "4. Python CLI 도구 설치"
-    if (-not (Test-CommandExists "uv")) { throw "먼저 3번을 실행하세요." }
+    Write-Section "5. Python CLI 도구 설치"
+    if (-not (Test-CommandExists "uv")) { throw "먼저 4번을 실행하세요." }
     foreach ($tool in (Read-Manifest (Join-Path $ManifestDir "python-tools.txt"))) { Invoke-Native "uv" @("tool", "install", "--upgrade", $tool) }
 }
 function Step-Node {
-    Write-Section "5. Node.js / pnpm 구성"
+    Write-Section "6. Node.js / pnpm 구성"
     if (-not (Test-CommandExists "corepack")) { throw "corepack이 없습니다. 먼저 2번을 실행하세요." }
     Invoke-Native "corepack" @("enable")
     Invoke-Native "corepack" @("prepare", "pnpm@latest", "--activate")
     Write-Host ("pnpm: {0}" -f (Get-VersionLine "pnpm")) -ForegroundColor Green
 }
 function Step-Rust {
-    Write-Section "6. Rust 구성"
+    Write-Section "7. Rust 구성"
     if (-not (Test-CommandExists "rustup")) { throw "rustup이 없습니다. 먼저 2번을 실행하세요." }
     Invoke-Native "rustup" @("toolchain", "install", "stable")
     Invoke-Native "rustup" @("default", "stable-msvc")
@@ -146,23 +146,9 @@ function Step-Rust {
     Invoke-Native "rustup" @("component", "add", "clippy")
 }
 function Step-Tauri {
-    Write-Section "7. Tauri CLI 구성"
-    if (-not (Test-CommandExists "cargo")) { throw "cargo가 없습니다. 먼저 6번을 실행하세요." }
+    Write-Section "8. Tauri CLI 구성"
+    if (-not (Test-CommandExists "cargo")) { throw "cargo가 없습니다. 먼저 7번을 실행하세요." }
     Invoke-Native "cargo" @("install", "tauri-cli", "--locked", "--force")
-}
-function Step-Lpm {
-    Write-Section "8. Lite XL / LPM 구성"
-    $directory = Join-Path $env:LOCALAPPDATA "Programs\lpm"
-    $executable = Join-Path $directory "lpm.exe"
-    if (-not (Test-Path -LiteralPath $executable)) {
-        New-Item -ItemType Directory -Path $directory -Force | Out-Null
-        Invoke-WebRequest -Uri "https://github.com/lite-xl/lite-xl-plugin-manager/releases/download/latest/lpm.x86_64-windows.exe" -OutFile $executable
-    }
-    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-    if (($userPath -split ";") -notcontains $directory) { [Environment]::SetEnvironmentVariable("Path", "$userPath;$directory", "User") }
-    $env:Path = "$directory;$env:Path"
-    if (-not (Test-CommandExists "lpm")) { throw "lpm이 설치되었지만 현재 터미널에서 찾을 수 없습니다." }
-    foreach ($plugin in (Read-Manifest (Join-Path $ManifestDir "lpm-plugins.txt"))) { Invoke-Native "lpm" @("install", $plugin, "--assume-yes") }
 }
 function Step-Directories {
     Write-Section "9. 개발 디렉터리 생성"
@@ -175,9 +161,13 @@ function Step-Docker {
     Write-Section "10. Docker 확인"
     if (-not (Test-CommandExists "docker")) { Write-Host "Docker 명령을 찾을 수 없습니다." -ForegroundColor DarkYellow; return }
     Write-Host ("Docker: {0}" -f (Get-VersionLine "docker"))
-    docker info *> $null
-    if ($LASTEXITCODE -eq 0) { Write-Host "Docker Engine: READY" -ForegroundColor Green }
-    else { Write-Host "Docker Desktop은 설치되어 있지만 Engine이 준비되지 않았습니다." -ForegroundColor DarkYellow }
+    $previousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    & docker info 1>$null 2>$null
+    $dockerExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $previousErrorActionPreference
+    if ($dockerExitCode -eq 0) { Write-Host "Docker Engine: READY" -ForegroundColor Green }
+    else { Write-Host "Docker CLI: READY" -ForegroundColor Green; Write-Host "Docker Engine: NOT READY - Docker Desktop을 실행하세요." -ForegroundColor DarkYellow }
 }
 function Step-Verify {
     Write-Section "11. 최종 확인"
@@ -191,19 +181,19 @@ function Step-Verify {
         Write-Host ""
         Write-Host "기본 .NET SDK: $(dotnet --version)" -ForegroundColor Green
     }
-    foreach ($name in @("git", "python", "uv", "ruff", "pyright", "dotnet", "node", "npm", "pnpm", "rustc", "cargo", "docker", "lite-xl")) { Write-Host ("{0,-12} {1}" -f $name, (Get-VersionLine $name)) }
+    foreach ($name in @("git", "python", "uv", "ruff", "dotnet", "node", "npm", "pnpm", "rustc", "cargo", "docker", "code")) { Write-Host ("{0,-12} {1}" -f $name, (Get-VersionLine $name)) }
 }
 
 while ($true) {
     Write-Section "Development Environment Setup - Windows PowerShell 5.1"
     Write-Host "1. 환경 점검"
     Write-Host "2. WinGet 패키지 설치"
-    Write-Host "3. uv 설치 및 확인"
-    Write-Host "4. Python CLI 도구 설치"
-    Write-Host "5. Node.js / pnpm 구성"
-    Write-Host "6. Rust 구성"
-    Write-Host "7. Tauri CLI 구성"
-    Write-Host "8. Lite XL / LPM 구성"
+    Write-Host "3. VS Code 확장 설치"
+    Write-Host "4. uv 설치 및 확인"
+    Write-Host "5. Python CLI 도구 설치"
+    Write-Host "6. Node.js / pnpm 구성"
+    Write-Host "7. Rust 구성"
+    Write-Host "8. Tauri CLI 구성"
     Write-Host "9. 개발 디렉터리 생성"
     Write-Host "10. Docker 확인"
     Write-Host "11. 최종 확인"
@@ -213,12 +203,12 @@ while ($true) {
         switch ($choice) {
             "1" { Step-Check }
             "2" { Step-Winget }
-            "3" { Step-Uv }
-            "4" { Step-PythonTools }
-            "5" { Step-Node }
-            "6" { Step-Rust }
-            "7" { Step-Tauri }
-            "8" { Step-Lpm }
+            "3" { Step-VSCodeExtensions }
+            "4" { Step-Uv }
+            "5" { Step-PythonTools }
+            "6" { Step-Node }
+            "7" { Step-Rust }
+            "8" { Step-Tauri }
             "9" { Step-Directories }
             "10" { Step-Docker }
             "11" { Step-Verify }

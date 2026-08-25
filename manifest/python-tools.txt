@@ -3,7 +3,6 @@
 # belong in each project's pyproject.toml + uv.lock.
 
 ruff
-pyright
 pytest
 ipython
 pre-commit
