@@ -49,6 +49,16 @@ function Refresh-Path {
     $user = [Environment]::GetEnvironmentVariable("Path", "User")
     $env:Path = "$machine;$user"
 }
+function Add-ExistingUserPath { param([string]$Directory)
+    if (-not (Test-Path -LiteralPath $Directory)) { return }
+    $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+    $parts = @()
+    if ($userPath) { $parts = @($userPath -split ";" | Where-Object { $_ }) }
+    if ($parts -notcontains $Directory) {
+        [Environment]::SetEnvironmentVariable("Path", (($parts + $Directory) -join ";"), "User")
+    }
+    if (($env:Path -split ";") -notcontains $Directory) { $env:Path = "$Directory;$env:Path" }
+}
 function Invoke-Native { param([string]$Name, [string[]]$Arguments)
     if (-not (Test-CommandExists $Name)) { throw "명령을 찾을 수 없습니다: $Name" }
     & $Name @Arguments
@@ -66,7 +76,12 @@ function Install-WingetPackage { param([string]$Id)
     Write-Host "Checking $Id ..." -ForegroundColor Gray
     $installed = & winget list --id $Id --exact --source winget --accept-source-agreements 2>$null | Out-String
     if ($installed -match [regex]::Escape($Id)) {
-        Invoke-Native "winget" @("upgrade", "--id", $Id, "--exact", "--source", "winget", "--accept-source-agreements", "--accept-package-agreements", "--silent")
+        $output = @(& winget upgrade --id $Id --exact --source winget --accept-source-agreements --accept-package-agreements --silent 2>&1)
+        $exitCode = $LASTEXITCODE
+        $output | ForEach-Object { Write-Host $_ }
+        if ($exitCode -ne 0 -and (($output -join "`n") -notmatch "No available upgrade|No newer package versions")) {
+            throw "winget 실행 실패. 종료 코드: $exitCode"
+        }
     } else {
         Invoke-Native "winget" @("install", "--id", $Id, "--exact", "--source", "winget", "--accept-source-agreements", "--accept-package-agreements", "--silent")
     }
@@ -89,6 +104,7 @@ function Step-Winget {
     if (-not (Test-CommandExists "winget")) { throw "winget이 없습니다. Microsoft App Installer를 먼저 설치하세요." }
     foreach ($id in (Read-Manifest (Join-Path $ManifestDir "winget-packages.txt"))) { Install-WingetPackage $id }
     Refresh-Path
+    Add-ExistingUserPath (Join-Path $env:LOCALAPPDATA "Programs\Lite XL")
 }
 function Step-Uv {
     Write-Section "3. uv 설치 및 확인"
@@ -175,7 +191,7 @@ function Step-Verify {
         Write-Host ""
         Write-Host "기본 .NET SDK: $(dotnet --version)" -ForegroundColor Green
     }
-    foreach ($name in @("git", "python", "uv", "ruff", "pyright", "dotnet", "node", "npm", "pnpm", "rustc", "cargo", "docker")) { Write-Host ("{0,-12} {1}" -f $name, (Get-VersionLine $name)) }
+    foreach ($name in @("git", "python", "uv", "ruff", "pyright", "dotnet", "node", "npm", "pnpm", "rustc", "cargo", "docker", "lite-xl")) { Write-Host ("{0,-12} {1}" -f $name, (Get-VersionLine $name)) }
 }
 
 while ($true) {

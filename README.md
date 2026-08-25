@@ -67,7 +67,32 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 The script can be rerun. If a package is already installed, WinGet may check
-for or apply an available upgrade.
+for or apply an available upgrade. A message such as `No available upgrade
+found` is a normal result and does not indicate a failure.
+
+The setup menu runs these steps independently:
+
+```text
+1.  Environment check
+2.  WinGet package installation and PATH registration
+3.  uv installation and verification
+4.  Python CLI tools
+5.  Node.js / pnpm
+6.  Rust
+7.  Tauri CLI
+8.  Lite XL / LPM
+9.  Development directories
+10. Docker check
+11. .NET SDK and runtime listing
+0.  Exit
+```
+
+The WinGet step registers the Lite XL installation directory in the user
+PATH. Open a new PowerShell window after setup, then run:
+
+```powershell
+lite-xl
+```
 
 ## Remove
 
