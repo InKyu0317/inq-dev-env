@@ -1,0 +1,25 @@
+# Core
+Git.Git
+
+# Python
+Python.Python.3.11
+
+# C# / .NET
+Microsoft.DotNet.SDK.6
+Microsoft.DotNet.SDK.8
+Microsoft.DotNet.SDK.10
+
+# JavaScript / TypeScript
+OpenJS.NodeJS.LTS
+
+# Rust
+Rustlang.Rustup
+
+# Containers / local infrastructure
+Docker.DockerDesktop
+
+# Lite XL
+LiteXLTeam.LiteXL
+
+# Native C/C++ build toolchain
+Microsoft.VisualStudio.2022.BuildTools

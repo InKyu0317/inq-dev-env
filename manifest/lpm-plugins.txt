@@ -1,0 +1,11 @@
+# Lite XL
+plugin_manager
+treeview
+projectsearch
+gitstatus
+
+# Development
+lsp
+
+# Terminal
+terminal
