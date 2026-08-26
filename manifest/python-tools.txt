@@ -1,8 +1,0 @@
-# Global Python CLI tools only.
-# Project libraries such as GlassPy, PyTorch, NumPy, SciPy, etc.
-# belong in each project's pyproject.toml + uv.lock.
-
-ruff
-pytest
-ipython
-pre-commit
