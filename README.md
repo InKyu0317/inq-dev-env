@@ -6,7 +6,7 @@ Windows와 macOS에서 개발 도구를 한 단계씩 설치하고 검증하며,
 
 > 문서 기준일: 2026-08-26<br>
 > 기준 환경: Windows x64 또는 macOS Apple Silicon/Intel<br>
-> 핵심 버전: Python 3.11, Windows용 .NET SDK 10, Node.js 24 LTS
+> 핵심 버전: Python 3.11, Windows용 .NET SDK 10
 
 ## 목차
 
@@ -39,11 +39,9 @@ Windows와 macOS에서 개발 도구를 한 단계씩 설치하고 검증하며,
 
 | 영역 | Windows | macOS | 버전 정책 |
 |---|---|---|---|
-| 소스 관리 | Git | Git | 최신 안정 버전 |
 | Python 관리 | uv | uv | 최신 안정 버전 |
 | Python | uv 관리 CPython | uv 관리 CPython | 3.11.x |
 | ASP.NET | .NET SDK | 설치하지 않음 | Windows 10.x LTS |
-| JavaScript | Node.js | Node.js | 24.x LTS |
 | JS 패키지 | pnpm | pnpm | 최신 안정 버전 |
 | Rust | rustup + stable-msvc | rustup + stable | 최신 stable |
 | 네이티브 빌드 | Visual Studio Build Tools | Xcode Command Line Tools | OS 지원 버전 |
@@ -90,10 +88,8 @@ Docker Desktop 요구사항은 일반 CLI 도구보다 엄격하고 변경될 �
 Get-ComputerInfo | Select-Object WindowsProductName, WindowsVersion, OsArchitecture
 $env:PROCESSOR_ARCHITECTURE
 winget --version
-git --version
 uv --version
 dotnet --list-sdks
-node --version
 pnpm --version
 rustup --version
 rustc --version
@@ -105,14 +101,13 @@ code --version
 현재 명령 위치도 기록해 두면 나중에 제거 검증에 도움이 됩니다.
 
 ```powershell
-Get-Command git, uv, dotnet, node, npm, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
+Get-Command uv, dotnet, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
 ```
 
 ### 4.3 WinGet 준비
 
 ```powershell
 winget source update
-winget search Git.Git
 ```
 
 WinGet이 없다면 Microsoft Store의 **App Installer** 또는 [Microsoft WinGet 안내](https://learn.microsoft.com/windows/package-manager/winget/)를 사용합니다.
@@ -122,10 +117,8 @@ WinGet이 없다면 Microsoft Store의 **App Installer** 또는 [Microsoft WinGe
 다음 명령을 한 번에 하나씩 실행합니다.
 
 ```powershell
-winget install --id Git.Git --exact --source winget
 winget install --id astral-sh.uv --exact --source winget
 winget install --id Microsoft.DotNet.SDK.10 --exact --source winget
-winget install --id OpenJS.NodeJS.LTS --exact --source winget
 winget install --id pnpm.pnpm --exact --source winget
 winget install --id Rustlang.Rustup --exact --source winget
 winget install --id Microsoft.VisualStudioCode --exact --source winget
@@ -199,11 +192,9 @@ dotnet --list-runtimes
 
 `dotnet`은 실행되지만 SDK 목록이 비어 있으면 host/runtime만 있는 상태입니다. `Microsoft.DotNet.SDK.10` 설치 여부를 다시 확인합니다.
 
-### 4.8 Node.js, pnpm, Rust
+### 4.8 pnpm, Rust
 
 ```powershell
-node --version
-npm --version
 pnpm --version
 rustup default stable-msvc
 rustup update stable
@@ -277,9 +268,7 @@ sw_vers
 uname -m
 xcode-select -p
 brew --version
-git --version
 uv --version
-node --version
 pnpm --version
 rustup --version
 rustc --version
@@ -331,19 +320,9 @@ brew doctor
 ### 5.4 기본 패키지
 
 ```zsh
-brew install git
 brew install uv
-brew install node@24
 brew install pnpm
 ```
-
-`node@24`는 keg-only formula입니다. `node`가 PATH에 없다면 현재 Terminal에서 다음을 실행합니다.
-
-```zsh
-export PATH="$(brew --prefix node@24)/bin:$PATH"
-```
-
-지속 적용하려면 같은 `export` 문을 `~/.zshrc`에 한 번만 추가합니다. Node.js 24의 LTS 기간이 끝난 뒤에는 [Node.js 릴리스 현황](https://nodejs.org/en/about/previous-releases)을 확인하여 당시 LTS formula로 변경합니다.
 
 ### 5.5 Python 3.11
 
@@ -370,11 +349,9 @@ uv sync
 uv run python --version
 ```
 
-### 5.6 Node.js, pnpm, Rust
+### 5.6 pnpm, Rust
 
 ```zsh
-node --version
-npm --version
 pnpm --version
 curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 source "$HOME/.cargo/env"
@@ -427,13 +404,10 @@ code --list-extensions
 새 PowerShell 또는 Terminal에서 확인합니다. macOS에서는 `dotnet` 항목을 제외합니다.
 
 ```text
-git --version
 uv --version
 uv run --python 3.11 python --version
 dotnet --version               # Windows only
 dotnet --list-sdks             # Windows only
-node --version
-npm --version
 pnpm --version
 rustup --version
 rustc --version
@@ -446,7 +420,6 @@ code --version
 
 - Python은 `3.11.x`입니다.
 - Windows의 SDK 목록에는 `10.x`가 있습니다.
-- Node.js는 문서 기준 `24.x LTS`입니다.
 - Rust target은 Windows에서 `stable-*-pc-windows-msvc`, macOS에서 `stable-*-apple-darwin`입니다.
 - Docker는 Client와 Server 정보를 모두 표시합니다.
 
@@ -938,7 +911,6 @@ Apple Silicon에서는 특별한 이유 없이 Intel Homebrew(`/usr/local`)와 A
 - [Python downloads](https://www.python.org/downloads/)
 - [uv installation](https://docs.astral.sh/uv/getting-started/installation/)
 - [uv environments](https://docs.astral.sh/uv/pip/environments/)
-- [Node.js downloads and LTS](https://nodejs.org/en/download)
 - [pnpm installation](https://pnpm.io/installation)
 - [Rust installation](https://rust-lang.org/tools/install/)
 - [Docker Desktop for Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
