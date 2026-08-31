@@ -47,6 +47,7 @@ Windows와 macOS에서 개발 도구를 한 단계씩 설치하고 검증하며,
 | 네이티브 빌드 | Visual Studio Build Tools | Xcode Command Line Tools | OS 지원 버전 |
 | 컨테이너 | Docker Desktop + WSL 2 | Docker Desktop | OS 지원 버전 |
 | 편집기 | VS Code Stable | VS Code Stable | 최신 안정 버전 |
+| GitHub 연동 | GitHub CLI (`gh`) | GitHub CLI (`gh`) | 최신 안정 버전 |
 
 Windows에서 `.NET SDK 10`을 설치하면 같은 버전의 .NET Runtime과 ASP.NET Core Runtime도 함께 설치됩니다. 해당 런타임을 별도로 중복 설치할 필요가 없습니다.
 
@@ -96,12 +97,13 @@ rustc --version
 cargo --version
 docker version
 code --version
+gh --version
 ```
 
 현재 명령 위치도 기록해 두면 나중에 제거 검증에 도움이 됩니다.
 
 ```powershell
-Get-Command uv, dotnet, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
+Get-Command uv, dotnet, pnpm, rustup, rustc, cargo, docker, code, gh -ErrorAction SilentlyContinue
 ```
 
 ### 4.3 WinGet 준비
@@ -122,6 +124,7 @@ winget install --id Microsoft.DotNet.SDK.10 --exact --source winget
 winget install --id pnpm.pnpm --exact --source winget
 winget install --id Rustlang.Rustup --exact --source winget
 winget install --id Microsoft.VisualStudioCode --exact --source winget
+winget install --id GitHub.cli --exact --source winget
 ```
 
 `No available upgrade found`는 설치 실패가 아니라 적용할 업데이트가 없다는 의미입니다. 설치 후 PowerShell을 완전히 닫고 새 창을 엽니다.
@@ -275,6 +278,7 @@ rustc --version
 cargo --version
 docker version
 code --version
+gh --version
 ```
 
 - `arm64`: Apple Silicon용 도구를 사용합니다.
@@ -322,6 +326,7 @@ brew doctor
 ```zsh
 brew install uv
 brew install pnpm
+brew install gh
 ```
 
 ### 5.5 Python 3.11
@@ -414,6 +419,7 @@ rustc --version
 cargo --version
 docker version
 code --version
+gh --version
 ```
 
 정상 기준:
@@ -422,6 +428,16 @@ code --version
 - Windows의 SDK 목록에는 `10.x`가 있습니다.
 - Rust target은 Windows에서 `stable-*-pc-windows-msvc`, macOS에서 `stable-*-apple-darwin`입니다.
 - Docker는 Client와 Server 정보를 모두 표시합니다.
+- GitHub CLI는 `gh --version`이 버전을 표시합니다. 계정 인증 여부는 필요한 경우에만 `gh auth status`로 확인합니다.
+
+### 6.1 GitHub 계정 인증 (선택)
+
+GitHub 계정 인증이 필요한 경우에만 사용자 본인이 다음 명령을 실행합니다. 브라우저 인증, 토큰 저장 위치, Git 프로토콜 선택은 사용자 계정과 자격 증명에 영향을 줄 수 있으므로 자동화하지 않습니다.
+
+```text
+gh auth login
+gh auth status
+```
 
 다음 smoke test는 이미지를 다운로드하므로 사용자 동의 후 실행합니다.
 
@@ -482,7 +498,7 @@ uv tool list
 code --list-extensions
 docker context ls
 docker volume ls
-Get-Command git, uv, dotnet, node, npm, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
+Get-Command git, gh, uv, dotnet, node, npm, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
 [Environment]::GetEnvironmentVariable('Path', 'User')
 [Environment]::GetEnvironmentVariable('Path', 'Machine')
 ```
@@ -663,10 +679,11 @@ Get-ChildItem "$env:PROGRAMDATA\DockerDesktop" -Force -ErrorAction SilentlyConti
 
 완전 초기화를 원하는 경우에만 Docker 공식 제거 문서에서 현재 버전의 잔여 경로와 WSL 배포판 이름을 확인합니다. `wsl --unregister <배포판>`은 해당 가상 디스크의 image, container, volume을 영구 삭제하므로 이름과 백업을 확인하기 전에는 실행하지 않습니다.
 
-### 8.9 Git과 PATH 최종 정리
+### 8.9 Git, GitHub CLI와 PATH 최종 정리
 
 ```powershell
 winget uninstall --id Git.Git --exact --source winget
+winget uninstall --id GitHub.cli --exact --source winget
 ```
 
 사용자와 시스템 PATH를 확인합니다.
@@ -691,7 +708,7 @@ C:\Program Files\dotnet
 새 PowerShell을 열고 최종 확인합니다.
 
 ```powershell
-Get-Command git, uv, dotnet, node, npm, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
+Get-Command git, gh, uv, dotnet, node, npm, pnpm, rustup, rustc, cargo, docker, code -ErrorAction SilentlyContinue
 ```
 
 ---
@@ -709,7 +726,7 @@ rustup show
 code --list-extensions
 docker context ls
 docker volume ls
-command -v git uv node npm pnpm rustup rustc cargo docker code
+command -v git gh uv node npm pnpm rustup rustc cargo docker code
 printf '%s\n' "$PATH" | tr ':' '\n'
 ```
 
@@ -800,12 +817,13 @@ ls -la "$HOME/Library/Application Support/Docker Desktop"
 
 이 경로에는 image, container, volume, credential 설정이 포함될 수 있습니다. 완전 초기화가 필요한 경우에만 [Docker Desktop for macOS 제거 안내](https://docs.docker.com/desktop/uninstall/)의 현재 경로를 확인하고 삭제합니다.
 
-### 9.7 Git, Homebrew, Xcode CLT
+### 9.7 Git, GitHub CLI, Homebrew, Xcode CLT
 
 Homebrew로 설치한 Git 제거:
 
 ```zsh
 brew uninstall git
+brew uninstall gh
 ```
 
 Homebrew와 Xcode Command Line Tools는 다른 프로그램도 사용할 수 있으므로 기본적으로 보존합니다.
@@ -847,7 +865,7 @@ Homebrew가 관리하는 링크는 `brew uninstall`이 정리하게 둡니다. �
 새 Terminal에서 최종 확인합니다.
 
 ```zsh
-command -v git uv node npm pnpm rustup rustc cargo docker code
+command -v git gh uv node npm pnpm rustup rustc cargo docker code
 printf '%s\n' "$PATH" | tr ':' '\n'
 ```
 
@@ -917,6 +935,8 @@ Apple Silicon에서는 특별한 이유 없이 Intel Homebrew(`/usr/local`)와 A
 - [Docker Desktop for macOS](https://docs.docker.com/desktop/setup/install/mac-install/)
 - [Docker Desktop uninstall](https://docs.docker.com/desktop/uninstall/)
 - [VS Code CLI](https://code.visualstudio.com/docs/configure/command-line)
+- [GitHub CLI 설치](https://cli.github.com/)
+- [GitHub CLI 인증](https://cli.github.com/manual/gh_auth_login)
 - [Homebrew](https://brew.sh/)
 - [Homebrew Formulae](https://formulae.brew.sh/)
 
